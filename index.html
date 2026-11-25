@@ -507,6 +507,10 @@ body { background: #2E6B3A; }
   .perg:has(> .mapa-caixa) .mapa-br { max-height: calc(100vh - 96px); } .perg:has(> .mapa-caixa) .leg-reg { font-size: .8rem; gap: 2px 8px; }
   .perg:has(> .mapa-caixa) .opcoes { gap: 6px; } .perg:has(> .mapa-caixa) .opcao { min-height: 48px; padding: 6px 12px; }
 }
+
+/* aviso da cestinha menor, translúcido e curto (1,4 s), para não tapar os estados que caem */
+.chuva .toast { max-width: 80%; font-size: .9em; background: rgba(255,255,255,.88); }
+.chuva .toast.bom { background: rgba(220,245,225,.9); } .chuva .toast.ruim { background: rgba(255,226,226,.9); }
 </style>
 </head>
 <body>
@@ -958,7 +962,7 @@ var ESTACOES = [
   { id: 'baloes', n: 5, curto: 'Balões', titulo: 'Balões da Verdade', sel: 'Questões 3, 5 e 11', cor: '#B4236B', med: 'baloes', mundo: 'baloes' },
   { id: 'mapa', n: 6, curto: 'Mapa', titulo: 'O Mapa do Brasil', sel: 'Caderno · questões 9 e 10', cor: '#B34A08', med: 'mapa', mundo: 'mapa' },
   { id: 'cesta', n: 7, curto: 'Cestinha', titulo: 'Chuva de Estados', sel: 'Caderno · questões 9 e 11', cor: '#8A4B08', med: 'cesta', mundo: 'cesta' },
-  { id: 'labirinto', n: 8, curto: 'Labirinto', titulo: 'O Labirinto da Brisa', sel: 'Caderno e livro · questões 8, 10 e 11', cor: '#2F7D32', med: 'labirinto', mundo: 'labirinto' },
+  { id: 'labirinto', n: 8, curto: 'Labirinto', titulo: 'O Labirinto da Brisa', sel: 'Caderno e livro · questões 8, 10 e 11', cor: '#2F7D32', med: 'labirinto', mundo: 'labirinto' },
   { id: 'edicao', n: 9, curto: 'Edição', titulo: 'Edição da Prova', sel: 'Oito cartas de treino', cor: '#7C2D8E', med: 'edicao', mundo: 'edicao' }
 ];
 var PRINC = ESTACOES.slice(0, 8), MAXEST = ESTACOES.length * 3;
@@ -1136,11 +1140,12 @@ function preCarregar(prefixo) {   /* só no cache do navegador (fetch), sem cria
   });
 }
 preCarregar.feitos = {};
-function mostrar(slug, alvo) { var el = $(alvo); if (el) { el.textContent = FALAS[slug]; el.dataset.slug = slug; } }
+function telaTxt(s) { return String(s).replace(/Centro-Oeste/g, 'Centro‑Oeste'); }
+function mostrar(slug, alvo) { var el = $(alvo); if (el) { el.textContent = telaTxt(FALAS[slug]); el.dataset.slug = slug; } }
 function dizer(slug, alvo, cls, aoFim, garante) {
   var el = $(alvo || 'balao');
   if (el) {
-    el.textContent = FALAS[slug]; el.dataset.slug = slug;
+    el.textContent = telaTxt(FALAS[slug]); el.dataset.slug = slug;
     el.classList.remove('bom', 'ruim', 'pop'); if (cls) el.classList.add(cls);
     void el.offsetWidth; el.classList.add('pop');
   }
@@ -1285,7 +1290,7 @@ function rodarPassos(lista, fimSlug) {
 /* fim de um passo: fala o resumo (1 frase), mostra "Próxima" e segue sozinha quando a voz acaba (a teoria aberta segura o avanço) */
 function resumo(slug, seguir) {
   var feito = false, meu = EST;
-  function ir() { if (feito) return; if (TEO.aberta) { setTimeout(ir, 500); return; } feito = true; dockLimpa(); if (ativo(meu)) seguir(); }
+  function ir() { if (feito) return; if (TEO.aberta) { setTimeout(ir, 500); return; } feito = true; if (!ativo(meu)) return; dockLimpa(); seguir(); }
   dockBotao('Próxima ' + ic('seta'), function () { if (TEO.aberta) return; ir(); }, 'btn-prox');
   if (FALAS[slug]) { dizer(slug, 'balao', 'bom', function () { setTimeout(ir, 450); }, true); return; }
   var txt = TEXTOS[slug] || 'Isso, muito bem!'; calar(); balaoTexto(txt, 'bom');
@@ -1866,7 +1871,7 @@ RODAR.mapa = function () {
       caixas: [{ id: 'est', rot: 'Estado', cor: '#B34A08' }, { id: 'cap', rot: 'Capital', cor: '#1B5FB8' }],
       itens: [{ t: 'Mato Grosso do Sul', c: 'est', ok: 'Isso! É o nosso estado.' }, { t: 'Campo Grande', c: 'cap', ok: 'Isso! É a nossa capital.' }, { t: 'Acre', c: 'est', ok: 'Isso! Acre é um estado.' }, { t: 'Rio Branco', c: 'cap', ok: 'Isso! É a capital do Acre.' }] }),
     quizSeq([{ num: 'Caderno', teo: 'T10', slug: 'map-p5', hint: 'map-h5', ok: 'map-o5', certa: 0,
-      ops: ['Um conjunto de letras iniciais que dá nome a estados, países e empresas.', 'O desenho de um estado no mapa.', 'A cidade mais importante de um estado.'] }])
+      ops: ['Um conjunto de letras iniciais que dá nome a estados, países e empresas.', 'Um conjunto de letras que mostra a capital de cada estado no mapa.', 'Um desenho que mostra a bandeira de estados, países e empresas.'] }])
   ], null);
 };
 
@@ -1898,7 +1903,7 @@ function chuvaEstados(prox) {
     limparBalao(); EST.ajuda = 'ces-aj';
     var area = $('ch-area'); if (area.clientWidth > 600) area.classList.add('grande');
     function hud() { $('ch-vidas').innerHTML = vidasHTML(X.vidas); $('ch-pts').innerHTML = ic('estrela') + ' ' + X.pts + ' de ' + META; }
-    function toast(msg, cls) { var t = $('ch-toast'); t.className = 'toast on ' + cls; t.innerHTML = msg; clearTimeout(toast.t); toast.t = setTimeout(function () { t.className = 'toast'; }, 2400); }
+    function toast(msg, cls) { var t = $('ch-toast'); t.className = 'toast on ' + cls; t.innerHTML = msg; clearTimeout(toast.t); toast.t = setTimeout(function () { t.className = 'toast'; }, 1400); }
     function limpaItens() { X.itens.forEach(function (it) { it.el.classList.add('some'); setTimeout(function () { it.el.remove(); }, 220); }); X.itens = []; }
     function reinicia() { X.n = 0; X.semCerto = 0; X.prox = 0.9; X.posCerto = 1 + Math.floor(Math.random() * 2); }
     function novoPedido() { X.pi++; X.pedido = CES_PEDIDOS[X.pi]; X.pegos = []; X.noPedido = 0; reinicia(); limpaItens(); dizer(X.pedido.slug, 'pedido'); }
@@ -1960,7 +1965,7 @@ function chuvaEstados(prox) {
     area.addEventListener('pointerdown', function (ev) { if (ev.pointerType === 'mouse') ev.preventDefault(); ir(ev); try { area.setPointerCapture(ev.pointerId); } catch (e) { /* ignora */ } X.seg = true; });
     area.addEventListener('pointermove', function (ev) { if (X.seg) ir(ev); });
     ['pointerup', 'pointercancel'].forEach(function (n) { area.addEventListener(n, function () { X.seg = false; }); });
-    hud(); novoPedido(); ajustaArena(area, 240, 540);
+    hud(); novoPedido(); ajustaArena(area, 240, window.innerWidth >= 700 ? 760 : 540);
     X.raf = requestAnimationFrame(passo);
     window.__chuva = X;
   }
@@ -2135,7 +2140,7 @@ var LAB_COR = ['#FFC93C', '#FF8FC0', '#7CC4FF'], LAB_LETRA = ['A', 'B', 'C'];
 var LAB_DIR = { cima: [0, -1], baixo: [0, 1], esq: [-1, 0], dir: [1, 0] };
 function labirintoJogo(prox) {
   var meu = EST;
-  telaComecar({ sel: 'Questões 8, 10 e 11', teo: ['T10', 'T9'], slug: 'lab-p', aj: 'lab-aj', btn: 'btn-lab',
+  telaComecar({ sel: 'Questões 8, 10 e 11', teo: ['T10', 'T9'], slug: 'lab-p', aj: 'lab-aj', btn: 'btn-lab',
     extra: '<div class="lab-demo"><span>' + brisaRosto() + '<b>Você é a Brisa</b></span><span><svg viewBox="0 0 120 120" aria-hidden="true">' + fumacinha(44, 92, 2.6, '#6B7280') + rosto(62, 60, 1.3, 'triste') + '</svg><b>Fuja da fumaça</b></span>' +
       '<span><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="44" fill="#FFC93C"' + TR + ' stroke-width="5"/><text x="60" y="80" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="60" fill="' + T + '">A</text></svg><b>Coma a letra certa</b></span></div>' }, inicia);
   function inicia() {
